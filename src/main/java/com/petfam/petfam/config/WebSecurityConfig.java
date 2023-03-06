@@ -83,7 +83,7 @@ public class WebSecurityConfig implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(CorsRegistry corsRegistry) {
     corsRegistry.addMapping("/**")
-        .allowedOrigins("http://localhost:8080", "http://127.0.0.1:5500/", "http://127.0.0.1:5501/")
+        .allowedOrigins("http://localhost:8080", "https://petfam.netlify.app/", "http://127.0.0.1:5501/")
         .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS", "HEAD")
         .exposedHeaders(AUTHORIZATION_HEADER, REFRESH_AUTHORIZATION_HEADER)
         .allowCredentials(true)
