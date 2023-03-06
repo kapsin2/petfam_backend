@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommentServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.service.comment</a> &gt; <span class="el_source">CommentServiceImpl.java</span></div><h1>CommentServiceImpl.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.service.comment;
+
+import com.petfam.petfam.dto.comment.CommentRequestDto;
+import com.petfam.petfam.entity.Comment;
+import com.petfam.petfam.entity.Post;
+import com.petfam.petfam.entity.User;
+import com.petfam.petfam.repository.CommentRepository;
+import com.petfam.petfam.repository.PostRepository;
+import com.petfam.petfam.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+<span class="nc" id="L15">@RequiredArgsConstructor</span>
+public class CommentServiceImpl implements CommentService {
+
+  private final CommentRepository commentRepository;
+
+  private final PostRepository postRepository;
+
+  private final UserRepository userRepository;
+
+  // 댓글 생성
+  @Transactional
+  public String comment(Long postId, User user, CommentRequestDto commentRequestDto) {
+<span class="nc" id="L27">    Post post = _getPost(postId);</span>
+<span class="nc" id="L28">    user = _getUser(user.getUsername());</span>
+<span class="nc" id="L29">    Comment comment = new Comment(post, user, commentRequestDto);</span>
+<span class="nc" id="L30">    commentRepository.save(comment);</span>
+<span class="nc" id="L31">    return &quot;댓글 생성이 완료되었습니다.&quot;;</span>
+  }
+
+  // 댓글 수정
+  @Transactional
+  public String updateComment(Long commentId, User user,
+      CommentRequestDto commentRequestDto) {
+<span class="nc" id="L38">    Comment comment = _getComment(commentId);</span>
+
+<span class="nc" id="L40">    user = _getUser(user.getUsername());</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">      if (!user.isAdmin()) {</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">          if (comment.getUser().getUsername().equals(user.getUsername())) {</span>
+<span class="nc" id="L43">              comment.updateComment(commentRequestDto.getContent());</span>
+<span class="nc" id="L44">              commentRepository.save(comment);</span>
+          } else {
+<span class="nc" id="L46">              throw new IllegalArgumentException(&quot;자신이 작성한 댓글만 수정이 가능합니다.&quot;);</span>
+          }
+    } else {
+<span class="nc" id="L49">      comment.updateComment(commentRequestDto.getContent());</span>
+    }
+<span class="nc" id="L51">    return &quot;댓글 수정이 완료되었습니다.&quot;;</span>
+  }
+
+  // 댓글 삭제
+  @Transactional
+
+  public String deleteComment(Long commentId, User user) {
+<span class="nc" id="L58">    Comment comment = _getComment(commentId);</span>
+<span class="nc" id="L59">    user = _getUser(user.getUsername());</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">    if (!user.isAdmin()) {</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (comment.getUser().getUsername().equals(user.getUsername())) {</span>
+<span class="nc" id="L62">            commentRepository.deleteById(commentId);</span>
+        } else {
+<span class="nc" id="L64">            throw new IllegalArgumentException(&quot;본인이 작성한 댓글만 삭제가 가능합니다.&quot;);</span>
+        }
+    } else {
+<span class="nc" id="L67">      commentRepository.deleteById(commentId);</span>
+    }
+<span class="nc" id="L69">    return &quot;댓글 삭제가 완료되었습니다.&quot;;</span>
+  }
+
+  private Post _getPost(Long postId) {
+<span class="nc" id="L73">    Post post = postRepository.findById(postId).orElseThrow(</span>
+<span class="nc" id="L74">        () -&gt; new IllegalArgumentException(&quot;해당 게시글이 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L76">    return post;</span>
+  }
+
+  private User _getUser(String username) {
+<span class="nc" id="L80">    User user = userRepository.findByUsername(username).orElseThrow(</span>
+<span class="nc" id="L81">        () -&gt; new IllegalArgumentException(&quot;해당 유저가 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L83">    return user;</span>
+  }
+
+  private Comment _getComment(Long commentId) {
+<span class="nc" id="L87">    Comment comment = commentRepository.findById(commentId).orElseThrow(</span>
+<span class="nc" id="L88">        () -&gt; new IllegalArgumentException(&quot;해당 댓글이 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L90">    return comment;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

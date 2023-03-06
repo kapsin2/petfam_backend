@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TalkServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.service.message</a> &gt; <span class="el_source">TalkServiceImpl.java</span></div><h1>TalkServiceImpl.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.service.message;
+
+import com.petfam.petfam.dto.message.MessageRequestDto;
+import com.petfam.petfam.dto.message.MessageResponseDto;
+import com.petfam.petfam.entity.Message;
+import com.petfam.petfam.entity.Talk;
+import com.petfam.petfam.entity.User;
+import com.petfam.petfam.repository.MessageRepository;
+import com.petfam.petfam.repository.TalkRepository;
+import com.petfam.petfam.repository.UserRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+<span class="nc" id="L19">@RequiredArgsConstructor</span>
+public class TalkServiceImpl implements TalkService {
+
+  private final TalkRepository talkRepository;
+  private final MessageRepository messageRepository;
+  private final UserRepository userRepository;
+
+  @Override
+  @Transactional
+  public List&lt;MessageResponseDto&gt; sendMessage(Long receiveId, User user,
+      MessageRequestDto messageRequestDto) {
+<span class="nc bnc" id="L30" title="All 2 branches missed.">    if(userRepository.findById(receiveId).isEmpty()) {throw new IllegalArgumentException(&quot;해당유저가 존재하지 않습니다.&quot;);}</span>
+
+<span class="nc" id="L32">    Optional&lt;Talk&gt; talkCk = talkRepository.findByApplyIdAndReceiveId(user.getId(), receiveId);</span>
+<span class="nc" id="L33">    Optional&lt;Talk&gt; talkCk2 = talkRepository.findByApplyIdAndReceiveId(receiveId, user.getId());</span>
+
+<span class="nc bnc" id="L35" title="All 4 branches missed.">    if (talkCk.isEmpty() &amp;&amp; talkCk2.isEmpty()) {</span>
+<span class="nc" id="L36">      Talk talk = new Talk(user.getId(), receiveId);</span>
+<span class="nc" id="L37">      talkRepository.save(talk);</span>
+<span class="nc" id="L38">      Message message = new Message(talk.getId(), user.getNickname(), messageRequestDto);</span>
+<span class="nc" id="L39">      messageRepository.save(message);</span>
+
+<span class="nc" id="L41">      return getMessages(talk.getId(), user);</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">    } else if(talkCk.isPresent()){</span>
+
+<span class="nc" id="L44">      Talk talk = _findTalk(user.getId(),receiveId);</span>
+<span class="nc" id="L45">      Message message = new Message(talk.getId(), user.getNickname(), messageRequestDto);</span>
+<span class="nc" id="L46">      messageRepository.save(message);</span>
+
+<span class="nc" id="L48">      return getMessages(talk.getId(), user);</span>
+    } else {
+<span class="nc" id="L50">      Talk talk = _findTalk(receiveId, user.getId());</span>
+<span class="nc" id="L51">      Message message = new Message(talk.getId(), user.getNickname(), messageRequestDto);</span>
+<span class="nc" id="L52">      messageRepository.save(message);</span>
+
+<span class="nc" id="L54">      return getMessages(talk.getId(), user);</span>
+    }
+
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List&lt;MessageResponseDto&gt; getMessages(Long talkId, User user) {
+<span class="nc" id="L62">    Talk talk = _findTalk(talkId);</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">    if ((!talk.getApplyId().equals(user.getId())) &amp;&amp; (!talk.getReceiveId().equals(user.getId()))) {</span>
+<span class="nc" id="L64">      throw new IllegalArgumentException(&quot;해당 톡방에 접근권한이 없습니다.&quot;);</span>
+    }
+
+<span class="nc" id="L67">    List&lt;Message&gt; messages = messageRepository.findAllByTalkId(talkId);</span>
+<span class="nc" id="L68">    List&lt;MessageResponseDto&gt; messageResponseDtos = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">    for (Message message : messages) {</span>
+<span class="nc" id="L70">      messageResponseDtos.add(new MessageResponseDto(message));</span>
+<span class="nc" id="L71">    }</span>
+<span class="nc" id="L72">    return messageResponseDtos;</span>
+  }
+
+  private Talk _findTalk(Long applyId, Long receiveId) {
+<span class="nc" id="L76">    return talkRepository.findByApplyIdAndReceiveId(applyId, receiveId).orElseThrow(</span>
+<span class="nc" id="L77">        () -&gt; new IllegalArgumentException(&quot;톡방이 존재하지 않습니다.&quot;)</span>
+    );
+  }
+
+  private Talk _findTalk(Long talkId) {
+<span class="nc" id="L82">    return talkRepository.findById(talkId).orElseThrow(</span>
+<span class="nc" id="L83">        () -&gt; new IllegalArgumentException(&quot;톡방이 존재하지 않습니다.&quot;)</span>
+    );
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.service.user</a> &gt; <span class="el_source">UserServiceImpl.java</span></div><h1>UserServiceImpl.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.service.user;
+
+
+import com.petfam.petfam.dto.user.AdminSigninRequestDto;
+import com.petfam.petfam.dto.user.AdminSignupRequestDto;
+import com.petfam.petfam.dto.user.ProfileResponseDto;
+import com.petfam.petfam.dto.user.ProfileUpdateDto;
+import com.petfam.petfam.dto.user.SigninRequestDto;
+import com.petfam.petfam.dto.user.UserNicknameDto;
+import com.petfam.petfam.dto.user.UserSignupRequestDto;
+import com.petfam.petfam.dto.user.UserUsernameDto;
+import com.petfam.petfam.entity.RefreshToken;
+import com.petfam.petfam.entity.SignoutAccessToken;
+import com.petfam.petfam.entity.User;
+import com.petfam.petfam.entity.enums.UserRoleEnum;
+import com.petfam.petfam.jwt.JwtUtil;
+import com.petfam.petfam.redis.CacheKey;
+import com.petfam.petfam.repository.RefreshTokenRedisRepository;
+import com.petfam.petfam.repository.SignoutAccessTokenRedisRepository;
+import com.petfam.petfam.repository.UserRepository;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+<span class="nc" id="L31">@RequiredArgsConstructor</span>
+public class UserServiceImpl implements UserService {
+
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final JwtUtil jwtUtil;
+  private static final String ADMIN_TOKEN = &quot;AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC&quot;;
+  private final RefreshTokenRedisRepository refreshTokenRedisRepository;
+  private final SignoutAccessTokenRedisRepository signoutAccessTokenRedisRepository;
+
+
+  // 유저 회원가입
+  @Override
+  @Transactional
+  public String userSignup(UserSignupRequestDto usersignupRequestDto) {
+
+<span class="nc" id="L47">    String password = passwordEncoder.encode(usersignupRequestDto.getPassword());</span>
+
+<span class="nc" id="L49">    _ck_username(usersignupRequestDto.getUsername());</span>
+<span class="nc" id="L50">    _ck_nickname(usersignupRequestDto.getNickname());</span>
+
+<span class="nc" id="L52">    User user = new User(usersignupRequestDto.getUsername(), password,</span>
+<span class="nc" id="L53">        usersignupRequestDto.getNickname(), &quot;image&quot;,</span>
+        UserRoleEnum.USER);
+
+<span class="nc" id="L56">    userRepository.save(user);</span>
+
+<span class="nc" id="L58">    return &quot;success&quot;;</span>
+  }
+
+
+  // 관리자 회원가입
+  @Override
+  @Transactional
+  public String adminSignup(AdminSignupRequestDto adminsignupRequestDto) {
+<span class="nc" id="L66">    String password = passwordEncoder.encode(adminsignupRequestDto.getPassword());</span>
+
+<span class="nc" id="L68">    _ck_username(adminsignupRequestDto.getUsername());</span>
+<span class="nc" id="L69">    _ck_nickname(adminsignupRequestDto.getNickname());</span>
+
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if (adminsignupRequestDto.getAdminKey().equals(ADMIN_TOKEN)) {</span>
+<span class="nc" id="L72">      User admin = new User(adminsignupRequestDto.getUsername(), password,</span>
+<span class="nc" id="L73">          adminsignupRequestDto.getNickname(), &quot;image&quot;,</span>
+          UserRoleEnum.ADMIN);
+
+<span class="nc" id="L76">      userRepository.save(admin);</span>
+
+<span class="nc" id="L78">      return &quot;success&quot;;</span>
+    } else {
+<span class="nc" id="L80">      throw new IllegalArgumentException(&quot;관리자 암호가 일치하지 않습니다&quot;);</span>
+    }
+  }
+
+  // 유저 로그인
+  @Override
+  @Transactional
+  public String signin(SigninRequestDto signinRequestDto, HttpServletResponse response) {
+
+<span class="nc" id="L89">    User user = userRepository.findByUsername(signinRequestDto.getUsername()).orElseThrow(</span>
+<span class="nc" id="L90">        () -&gt; new IllegalArgumentException(&quot;아이디와 비밀번호를 확인해주세요&quot;)</span>
+    );
+<span class="nc bnc" id="L92" title="All 2 branches missed.">    if (!passwordEncoder.matches(signinRequestDto.getPassword(), user.getPassword())) {</span>
+<span class="nc" id="L93">      throw new IllegalArgumentException(&quot;아이디와 비밀번호를 확인해주세요&quot;);</span>
+    }
+
+<span class="nc" id="L96">    String accessToken = jwtUtil.createToken(user.getUsername(),user.getUserRole());</span>
+<span class="nc" id="L97">    String refreshToken = jwtUtil.refreshToken(user.getUsername(),user.getUserRole());</span>
+
+<span class="nc" id="L99">    RefreshToken refreshToken1 = new RefreshToken(user.getUsername(),refreshToken.substring(8),jwtUtil.getRefreshTokenTime());</span>
+<span class="nc" id="L100">    refreshTokenRedisRepository.save(refreshToken1);</span>
+
+<span class="nc" id="L102">    response.addHeader(JwtUtil.AUTHORIZATION_HEADER,accessToken);</span>
+<span class="nc" id="L103">    response.addHeader(JwtUtil.REFRESH_AUTHORIZATION_HEADER,refreshToken);</span>
+
+<span class="nc" id="L105">    return &quot;success&quot;;</span>
+  }
+
+  // 관리자 로그인
+  @Override
+  @Transactional
+  public String adminSignin(AdminSigninRequestDto adminSigninRequestDto,
+      HttpServletResponse response) {
+<span class="nc" id="L113">    User admin = userRepository.findByUsername(adminSigninRequestDto.getUsername()).orElseThrow(</span>
+<span class="nc" id="L114">        () -&gt; new IllegalArgumentException(&quot;아이디와 비밀번호를 확인해주세요&quot;)</span>
+    );
+<span class="nc bnc" id="L116" title="All 2 branches missed.">    if (!passwordEncoder.matches(adminSigninRequestDto.getPassword(), admin.getPassword())) {</span>
+<span class="nc" id="L117">      throw new IllegalArgumentException(&quot;아이디와 비밀번호를 확인해주세요&quot;);</span>
+    }
+
+<span class="nc bnc" id="L120" title="All 2 branches missed.">    if (admin.getUserRole() != UserRoleEnum.ADMIN) {</span>
+<span class="nc" id="L121">      throw new IllegalArgumentException(&quot;관리자 계정이아닙니다.&quot;);</span>
+    }
+
+<span class="nc bnc" id="L124" title="All 2 branches missed.">    if (admin.getUserRole() == UserRoleEnum.ADMIN) {</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">      if (!adminSigninRequestDto.getAdminKey().equals(ADMIN_TOKEN)) {</span>
+<span class="nc" id="L126">        throw new IllegalArgumentException(&quot;관리자 암호를 확인해주세요&quot;);</span>
+      }
+    }
+
+<span class="nc" id="L130">    String accessToken = jwtUtil.createToken(admin.getUsername(),admin.getUserRole());</span>
+<span class="nc" id="L131">    String refreshToken = jwtUtil.refreshToken(admin.getUsername(),admin.getUserRole());</span>
+
+<span class="nc" id="L133">    RefreshToken refreshToken1 = new RefreshToken(admin.getUsername(),refreshToken.substring(8),jwtUtil.getRefreshTokenTime());</span>
+<span class="nc" id="L134">    refreshTokenRedisRepository.save(refreshToken1);</span>
+
+<span class="nc" id="L136">    response.addHeader(JwtUtil.AUTHORIZATION_HEADER,accessToken);</span>
+<span class="nc" id="L137">    response.addHeader(JwtUtil.REFRESH_AUTHORIZATION_HEADER,refreshToken);</span>
+
+
+<span class="nc" id="L140">    return &quot;success&quot;;</span>
+  }
+
+  // 로그아웃
+  @Override
+  @Transactional
+  @CacheEvict(value = CacheKey.USER, key = &quot;#username&quot;)
+  public String signout(HttpServletRequest request,String username) {
+<span class="nc" id="L148">    String accessToken = jwtUtil.resolveToken(request);</span>
+<span class="nc" id="L149">    long remainMilliSeconds = jwtUtil.getRemainMilliSeconds(accessToken);</span>
+<span class="nc" id="L150">    refreshTokenRedisRepository.deleteById(username);</span>
+<span class="nc" id="L151">    signoutAccessTokenRedisRepository.save(SignoutAccessToken.of(accessToken,username, remainMilliSeconds));</span>
+
+<span class="nc" id="L153">    return &quot;success&quot;;</span>
+  } //추후 구현
+
+
+  // 프로필 업데이트
+  @Override
+  @Transactional
+  public String updateProfile(ProfileUpdateDto profileUpdateDto, User user) {
+<span class="nc" id="L161">    user.updateProfile(profileUpdateDto);</span>
+<span class="nc" id="L162">    userRepository.save(user);</span>
+<span class="nc" id="L163">    return &quot;success&quot;;</span>
+  }
+
+  // 프로필 가져오기
+  @Override
+  @Transactional
+  public ProfileResponseDto getProfile(Long userId) {
+<span class="nc" id="L170">    User user = _findUser(userId);</span>
+<span class="nc" id="L171">    return ProfileResponseDto.builder().nickname(user.getNickname()).id(user.getId()).image(user.getImage()).introduction(user.getIntroduction()).role(user.getUserRole().getAuthority()).build();</span>
+  }
+
+  // 토큰 리프레쉬
+  @Override
+  @Transactional
+  public String refresh(HttpServletRequest request, HttpServletResponse response) {
+<span class="nc" id="L178">    String refreshToken = jwtUtil.resolveRefreshToken(request); //리프레시토큰</span>
+
+<span class="nc" id="L180">    Claims refreshInfo = jwtUtil.getUserInfoFromToken(refreshToken);</span>
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">    if (!refreshInfo.getSubject().isEmpty()) {</span>
+<span class="nc" id="L183">      User user = _findUser(refreshInfo.getSubject());</span>
+<span class="nc" id="L184">      response.addHeader(JwtUtil.AUTHORIZATION_HEADER,</span>
+<span class="nc" id="L185">          jwtUtil.createToken(user.getUsername(), user.getUserRole()));</span>
+<span class="nc" id="L186">      return &quot;success&quot;;</span>
+    } else {
+<span class="nc" id="L188">      throw new IllegalArgumentException(&quot;다시 로그인 해주세요&quot;);</span>
+    }
+  }
+  public String ck_username(UserUsernameDto userUsernameDto) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">    if (userRepository.findByUsername(userUsernameDto.getUsername()).isEmpty()) {</span>
+<span class="nc" id="L193">      return &quot;success&quot;;</span>
+<span class="nc" id="L194">    } else return &quot;fail&quot;;</span>
+  }
+
+  public String ck_nickname(UserNicknameDto userNicknameDto) {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">    if (userRepository.findByNickname(userNicknameDto.getNickname()).isEmpty()) {</span>
+<span class="nc" id="L199">      return &quot;success&quot;;</span>
+<span class="nc" id="L200">    } else return &quot;fail&quot;;</span>
+  }
+  private void _ck_username(String username) {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">    if (userRepository.findByUsername(username).isPresent()) {</span>
+<span class="nc" id="L204">      throw new IllegalArgumentException(&quot;이미 존재하는 유저입니다.&quot;);</span>
+    }
+<span class="nc" id="L206">  }</span>
+
+  private void _ck_nickname(String nickname) {
+<span class="nc bnc" id="L209" title="All 2 branches missed.">    if (userRepository.findByNickname(nickname).isPresent()) {</span>
+<span class="nc" id="L210">      throw new IllegalArgumentException(&quot;이미 존재하는 닉네임입니다.&quot;);</span>
+    }
+<span class="nc" id="L212">  }</span>
+
+  private User _findUser(String username) {
+<span class="nc" id="L215">    User user = userRepository.findByUsername(username).orElseThrow(</span>
+<span class="nc" id="L216">        () -&gt; new IllegalArgumentException(&quot;유저 정보가 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L218">    return user;</span>
+  }
+
+  private User _findUser(Long userId) {
+<span class="nc" id="L222">    User user = userRepository.findById(userId).orElseThrow(</span>
+<span class="nc" id="L223">        () -&gt; new IllegalArgumentException(&quot;유저 정보가 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L225">    return user;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

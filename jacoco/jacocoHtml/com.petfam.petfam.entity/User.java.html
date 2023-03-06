@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>User.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.entity</a> &gt; <span class="el_source">User.java</span></div><h1>User.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.entity;
+
+import com.petfam.petfam.dto.user.ProfileUpdateDto;
+import com.petfam.petfam.entity.enums.UserRoleEnum;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+// lombok
+@Getter
+//@NoArgsConstructor(access = AccessLevel.PROTECTED) 테코 작업
+<span class="nc" id="L25">@NoArgsConstructor</span>
+
+//jpa
+@Entity(name = &quot;users&quot;)
+public class User {
+
+  /**
+   * 컬럼 - 연관관계 컬럼을 제외한 컬럼을 정의합니다.
+   */
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = &quot;user_id&quot;, nullable = false)
+<span class="nc" id="L37">  private Long id;</span>
+
+  @Column(nullable = false)
+<span class="nc" id="L40">  private String username;</span>
+
+  @Column(nullable = false)
+<span class="nc" id="L43">  private String password;</span>
+
+  @Column(nullable = false)
+<span class="nc" id="L46">  private String nickname;</span>
+
+<span class="nc" id="L48">  private String image;</span>
+
+<span class="nc" id="L50">  private String introduction;</span>
+
+<span class="nc" id="L52">  private Integer point;</span>
+
+  @Column(nullable = false)
+  @Enumerated(value = EnumType.STRING)
+<span class="nc" id="L56">  private UserRoleEnum userRole;</span>
+
+<span class="nc" id="L58">  private Long kakaoId;</span>
+
+
+  /**
+   * 생성자 - 약속된 형태로만 생성가능하도록 합니다.
+   */
+
+<span class="pc" id="L65">  @Builder</span>
+  public User(Long id, String username, String password, String nickname,
+<span class="fc" id="L67">      String image, UserRoleEnum userRole) {</span>
+<span class="fc" id="L68">    this.id = id;</span>
+<span class="fc" id="L69">    this.username = username;</span>
+<span class="fc" id="L70">    this.password = password;</span>
+<span class="fc" id="L71">    this.nickname = nickname;</span>
+<span class="fc" id="L72">    this.image = &quot;src/main/java/resources/static/images/m_20220509173224_d9N4ZGtBVR.jpeg&quot;;</span>
+<span class="fc" id="L73">    this.introduction = &quot;안녕하세요.&quot;;</span>
+<span class="fc" id="L74">    this.point = 0;</span>
+<span class="fc" id="L75">    this.userRole = userRole;</span>
+<span class="fc" id="L76">  }</span>
+
+  // id 생성자에 추가 -&gt; 테스트코드를 위해서,이후 삭제 예정
+  @Builder
+  public User(String username, String password, String nickname,
+<span class="nc" id="L81">      String image, UserRoleEnum userRole) {</span>
+<span class="nc" id="L82">    this.username = username;</span>
+<span class="nc" id="L83">    this.password = password;</span>
+<span class="nc" id="L84">    this.nickname = nickname;</span>
+<span class="nc" id="L85">    this.image = &quot;src/main/java/resources/static/images/m_20220509173224_d9N4ZGtBVR.jpeg&quot;;</span>
+<span class="nc" id="L86">    this.introduction = &quot;안녕하세요.&quot;;</span>
+<span class="nc" id="L87">    this.point = 0;</span>
+<span class="nc" id="L88">    this.userRole = userRole;</span>
+<span class="nc" id="L89">  }</span>
+
+<span class="nc" id="L91">  public User(String username, Long kakaoId,String password ,String nickname) {</span>
+<span class="nc" id="L92">    this.username = username;</span>
+<span class="nc" id="L93">    this.password = password;</span>
+<span class="nc" id="L94">    this.kakaoId = kakaoId;</span>
+<span class="nc" id="L95">    this.nickname = nickname;</span>
+<span class="nc" id="L96">    this.image = &quot;src/main/java/resources/static/images/m_20220509173224_d9N4ZGtBVR.jpeg&quot;;</span>
+<span class="nc" id="L97">    this.introduction = &quot;안녕하세요.&quot;;</span>
+<span class="nc" id="L98">    this.point = 0;</span>
+<span class="nc" id="L99">    this.userRole = UserRoleEnum.USER;</span>
+<span class="nc" id="L100">  }</span>
+
+
+  /**
+   * 연관관계 - Foreign Key 값을 따로 컬럼으로 정의하지 않고 연관 관계로 정의합니다.
+   */
+<span class="pc" id="L106">  @OneToMany(mappedBy = &quot;user&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+<span class="nc" id="L107">  private final List&lt;Post&gt; posts = new ArrayList&lt;&gt;();</span>
+
+<span class="pc" id="L109">  @OneToMany(mappedBy = &quot;user&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+<span class="nc" id="L110">  private final List&lt;Comment&gt; comments = new ArrayList&lt;&gt;();</span>
+
+<span class="pc" id="L112">  @OneToMany(mappedBy = &quot;user&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+<span class="nc" id="L113">  private final List&lt;ReComment&gt; reComments = new ArrayList&lt;&gt;();</span>
+
+  /**
+   * 연관관계 편의 메소드 - 반대쪽에는 연관관계 편의 메소드가 없도록 주의합니다.
+   */
+
+
+  /**
+   * 서비스 메소드 - 외부에서 엔티티를 수정할 메소드를 정의합니다. (단일 책임을 가지도록 주의합니다.)
+   */
+  // admin 검증 함수
+  public boolean isAdmin() {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">    return this.userRole == UserRoleEnum.ADMIN;</span>
+  }
+
+
+  // 프로필 업데이트
+  public void updateProfile(ProfileUpdateDto profileUpdateDto) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    this.nickname = (profileUpdateDto.getNickname().equals(&quot;&quot;)) ? this.nickname : profileUpdateDto.getNickname();</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">    this.introduction = (profileUpdateDto.getIntroduction().equals(&quot;&quot;)) ? this.introduction : profileUpdateDto.getIntroduction();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">    this.image = (profileUpdateDto.getImage().equals(&quot;&quot;)) ? this.image : profileUpdateDto.getImage();</span>
+<span class="nc" id="L134">  }</span>
+
+
+  public void setId(long l) {
+<span class="nc" id="L138">    this.id = l;</span>
+<span class="nc" id="L139">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

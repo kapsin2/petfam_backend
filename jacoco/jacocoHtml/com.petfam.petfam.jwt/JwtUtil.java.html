@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.jwt</a> &gt; <span class="el_source">JwtUtil.java</span></div><h1>JwtUtil.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.jwt;
+
+import com.petfam.petfam.entity.enums.UserRoleEnum;
+import com.petfam.petfam.security.UserDetailsServiceImpl;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import java.security.Key;
+import java.util.Base64;
+import java.util.Date;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+@Component
+<span class="nc" id="L26">@RequiredArgsConstructor</span>
+public class JwtUtil {
+
+  private final UserDetailsServiceImpl userDetailsService;
+
+
+  //토큰 생성에 필요한 값
+  public static final String AUTHORIZATION_HEADER = &quot;Authorization&quot;; //Header KEY 값
+  public static final String REFRESH_AUTHORIZATION_HEADER = &quot;Refresh_authorization&quot;; //Header KEY 값
+  public static final String AUTHORIZATION_KEY = &quot;auth&quot;;  // 사용자 권한 값의 KEY.
+  public static final String BEARER_PREFIX = &quot;Bearer &quot;; //토큰 식별자.
+  public static final String REFRESH_PREFIX = &quot;Refresh &quot;; //토큰 식별자.
+<span class="nc" id="L38">  private static final Long ACCESS_TOKEN_TIME = 30 * 60 * 1000L;</span>
+<span class="nc" id="L39">  private static final Long REFRESH_TOKEN_TIME = 14 * 24 * 60 * 60 * 1000L; // 14 day</span>
+  @Value(&quot;${jwt.secret.key}&quot;)       //properties의 값을 읽어온다.
+  private String secretKey;         //비밀키 jwt암호 해독의 필수키
+  private Key key;                   //secretKey를 사용할수있게 변화시킨 key
+<span class="nc" id="L43">  private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;</span>
+
+  @PostConstruct //의존성주입이 이루어진후 초기화 하는 매서드 로직이 실행되기전에 수행된다.
+  public void init() {
+<span class="nc" id="L47">    byte[] bytes = Base64.getDecoder()</span>
+<span class="nc" id="L48">        .decode(secretKey);  //secretKey는 64진법으로 이루어져서 이것을 해독해서 byte코드로 만들고</span>
+<span class="nc" id="L49">    key = Keys.hmacShaKeyFor(bytes);                       //Key로 변환시켜 key로 넣어준다</span>
+<span class="nc" id="L50">  }</span>
+
+  public Long getRefreshTokenTime() {
+<span class="nc" id="L53">    return REFRESH_TOKEN_TIME;</span>
+  }
+
+
+  // 토큰 생성
+  public String createToken(String username, UserRoleEnum role) {
+<span class="nc" id="L59">    Date date = new Date();</span>
+<span class="nc" id="L60">    return BEARER_PREFIX +</span>
+<span class="nc" id="L61">        Jwts.builder()</span>
+<span class="nc" id="L62">            .setSubject(username)</span>
+<span class="nc" id="L63">            .claim(AUTHORIZATION_KEY, role)</span>
+<span class="nc" id="L64">            .setExpiration(new Date(date.getTime() + ACCESS_TOKEN_TIME))</span>
+<span class="nc" id="L65">            .setIssuedAt(date)</span>
+<span class="nc" id="L66">            .signWith(key, signatureAlgorithm)</span>
+<span class="nc" id="L67">            .compact();</span>
+  }
+
+  // 리프레시 토큰 생성
+  public String refreshToken(String username, UserRoleEnum role) {
+<span class="nc" id="L72">    Date date = new Date();</span>
+<span class="nc" id="L73">    return REFRESH_PREFIX +</span>
+<span class="nc" id="L74">        Jwts.builder()</span>
+<span class="nc" id="L75">            .setSubject(username)</span>
+<span class="nc" id="L76">            .claim(AUTHORIZATION_KEY, role)</span>
+<span class="nc" id="L77">            .setExpiration(new Date(date.getTime() + REFRESH_TOKEN_TIME))</span>
+<span class="nc" id="L78">            .setIssuedAt(date)</span>
+<span class="nc" id="L79">            .signWith(key, signatureAlgorithm)</span>
+<span class="nc" id="L80">            .compact();</span>
+  }
+
+  //클라이언트 요청에서 토큰을 찾아내고 BEARER_PREFIX를 제거하여 key로 해독가능한 상태로 만들어준다.
+  public String resolveToken(HttpServletRequest request) {
+<span class="nc" id="L85">    String bearerToken = request.getHeader(</span>
+        AUTHORIZATION_HEADER);  //HttpServletRequest매서드 .getHeader로 request에서 토큰을 찾는다.
+<span class="nc bnc" id="L87" title="All 4 branches missed.">    if (StringUtils.hasText(bearerToken) &amp;&amp; bearerToken.startsWith(</span>
+        BEARER_PREFIX)) {  //찾은 토큰이 text를 가지고있고 시작부분이 위에 정한 BEARER_PREFIX 와 같다면
+<span class="nc" id="L89">      return bearerToken.substring(7); //&quot;Bearer &quot; 를 지워주기위해 substring을 사용한다.</span>
+    }
+<span class="nc" id="L91">    return null;</span>
+  }
+
+  public String resolveRefreshToken(HttpServletRequest request) {
+<span class="nc" id="L95">    String bearerToken = request.getHeader(REFRESH_AUTHORIZATION_HEADER);</span>
+<span class="nc bnc" id="L96" title="All 4 branches missed.">    if (StringUtils.hasText(bearerToken) &amp;&amp; bearerToken.startsWith(REFRESH_PREFIX)) {</span>
+<span class="nc" id="L97">      return bearerToken.substring(8);</span>
+    }
+<span class="nc" id="L99">    return null;</span>
+  }
+
+  // 토큰 검증
+  public boolean validateToken(String token) {
+
+    try {
+<span class="nc" id="L106">      Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);</span>
+<span class="nc" id="L107">      return true;</span>
+<span class="nc" id="L108">    } catch (SecurityException | MalformedJwtException e) {</span>
+<span class="nc" id="L109">      throw new MalformedJwtException(&quot;Invalid JWT signature&quot;);</span>
+<span class="nc" id="L110">    } catch (ExpiredJwtException e) {</span>
+<span class="nc" id="L111">      throw new ExpiredJwtException(e.getHeader(), e.getClaims(), &quot;Expired JWT token&quot;);</span>
+<span class="nc" id="L112">    } catch (UnsupportedJwtException e) {</span>
+<span class="nc" id="L113">      throw new UnsupportedJwtException(&quot;Unsupported JWT token&quot;);</span>
+<span class="nc" id="L114">    } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L115">      throw new IllegalArgumentException(&quot;JWT claims is empty&quot;);</span>
+    }
+  }
+
+  // 토큰에서 사용자 정보 가져오기
+  public Claims getUserInfoFromToken(String token) {
+    try {
+<span class="nc" id="L122">      return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();</span>
+<span class="nc" id="L123">    } catch (ExpiredJwtException e) {</span>
+<span class="nc" id="L124">      return e.getClaims();</span>
+    }
+  }
+
+  // 인증 객체 생성
+  public Authentication createAuthentication(String username) {
+<span class="nc" id="L130">    UserDetails userDetails = userDetailsService.loadUserByUsername(username);</span>
+<span class="nc" id="L131">    return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());</span>
+  }
+
+  //남은 시간 계산
+  public long getRemainMilliSeconds(String token) {
+<span class="nc" id="L136">    Claims info = getUserInfoFromToken(token);</span>
+<span class="nc" id="L137">    Date expiration = info.getExpiration();</span>
+<span class="nc" id="L138">    Date now = new Date();</span>
+<span class="nc" id="L139">    return expiration.getTime() - now.getTime();</span>
+  }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

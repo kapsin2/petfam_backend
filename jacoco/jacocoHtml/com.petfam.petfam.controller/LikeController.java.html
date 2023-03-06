@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LikeController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.controller</a> &gt; <span class="el_source">LikeController.java</span></div><h1>LikeController.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.controller;
+
+import com.petfam.petfam.dto.like.CommentLikeResponseDto;
+import com.petfam.petfam.dto.like.PostLikeResponseDto;
+import com.petfam.petfam.dto.like.ReCommentLikeResponseDto;
+import com.petfam.petfam.security.UserDetailsImpl;
+import com.petfam.petfam.service.like.LikeService;
+import com.petfam.petfam.service.like.LikeServiceImpl;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+@RestController
+<span class="nc" id="L18">@RequiredArgsConstructor</span>
+public class LikeController {
+
+  private final LikeService likeService;
+
+  // 게시글 좋아요
+  @PostMapping(&quot;/posts/{postId}/like&quot;)
+  public ResponseEntity&lt;PostLikeResponseDto&gt; likePost(@PathVariable Long postId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
+<span class="nc" id="L27">    PostLikeResponseDto response = likeService.likePost(postId, userDetails.getUser());</span>
+<span class="nc" id="L28">    return ResponseEntity.ok(response);</span>
+  }
+
+  // 댓글 좋아요
+  @PostMapping(&quot;/comments/{commentId}/like&quot;)
+  public ResponseEntity&lt;CommentLikeResponseDto&gt; likeComment(@PathVariable Long commentId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
+<span class="nc" id="L35">    CommentLikeResponseDto response = likeService.likeComment(commentId, userDetails.getUser());</span>
+<span class="nc" id="L36">    return ResponseEntity.ok(response);</span>
+  }
+
+  // 대댓글 좋아요
+  @PostMapping(&quot;/recomments/{recommentId}/like&quot;)
+  public ResponseEntity&lt;ReCommentLikeResponseDto&gt; likeReComment(@PathVariable Long recommentId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
+<span class="nc" id="L43">    ReCommentLikeResponseDto response = likeService.likeReComment(recommentId, userDetails.getUser());</span>
+<span class="nc" id="L44">    return ResponseEntity.ok(response);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

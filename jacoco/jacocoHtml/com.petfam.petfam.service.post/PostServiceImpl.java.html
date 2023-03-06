@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PostServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.service.post</a> &gt; <span class="el_source">PostServiceImpl.java</span></div><h1>PostServiceImpl.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.service.post;
+
+import com.petfam.petfam.dto.post.AllPostResponseDto;
+import com.petfam.petfam.dto.post.PostCreateRequestDto;
+import com.petfam.petfam.dto.post.PostResponseDto;
+import com.petfam.petfam.dto.post.PostUpdateRequestDto;
+import com.petfam.petfam.dto.post.PostUpdateResponseDto;
+import com.petfam.petfam.entity.Post;
+import com.petfam.petfam.entity.User;
+import com.petfam.petfam.entity.enums.CategoryEnum;
+import com.petfam.petfam.entity.enums.UserRoleEnum;
+import com.petfam.petfam.repository.PostRepository;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+<span class="nc" id="L29">@RequiredArgsConstructor</span>
+public class PostServiceImpl implements PostService {
+
+  private final PostRepository postRepository;
+  public final static String VIEWCOOKIE = &quot;alreadyViewCookie&quot;;
+
+  @Override
+  @Transactional
+  public String createPost(PostCreateRequestDto requestDto, User user) {
+<span class="nc" id="L38">    Post post = new Post(requestDto, user);</span>
+<span class="nc" id="L39">    postRepository.save(post);</span>
+<span class="nc" id="L40">    return &quot;게시글 작성이 완료되었습니다.&quot;;</span>
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public Page&lt;AllPostResponseDto&gt; getPostsByCategory(CategoryEnum category, Pageable pageable) {
+<span class="nc" id="L46">    Page&lt;Post&gt; posts = postRepository.findByCategoryOrderByCreatedAtDesc(category, pageable);</span>
+
+<span class="nc" id="L48">    List&lt;AllPostResponseDto&gt; allPostResponseDtoList = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L50" title="All 2 branches missed.">    if (posts.isEmpty()) {</span>
+<span class="nc" id="L51">      throw new IllegalArgumentException(&quot;게시글이 존재하지 않습니다.&quot;);</span>
+    } else {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">      for (Post post : posts) {</span>
+<span class="nc" id="L54">        AllPostResponseDto allPostResponseDto = new AllPostResponseDto(post);</span>
+<span class="nc" id="L55">        allPostResponseDtoList.add(allPostResponseDto);</span>
+<span class="nc" id="L56">      }</span>
+    }
+<span class="nc" id="L58">    return new PageImpl&lt;&gt;(allPostResponseDtoList, pageable, posts.getTotalElements());</span>
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public PostResponseDto getSelectPost(Long postId) {
+<span class="nc" id="L64">    Post post = _findPost(postId);</span>
+<span class="nc" id="L65">    return new PostResponseDto(post);</span>
+  }
+
+  @Transactional
+  @Override
+  public PostUpdateResponseDto updatePost(Long postId, PostUpdateRequestDto requestDto, User user) {
+<span class="nc" id="L71">    Post post = _findPost(postId);</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">    if (user.getUserRole() != UserRoleEnum.ADMIN) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">      if (!post.getUser().getId().equals(user.getId())) {</span>
+<span class="nc" id="L75">        throw new IllegalArgumentException(&quot;글 작성자만 수정이 가능합니다.&quot;);</span>
+      }
+    }
+
+<span class="nc" id="L79">    post.updatePost(requestDto);</span>
+<span class="nc" id="L80">    return new PostUpdateResponseDto(post);</span>
+  }
+
+
+  @Transactional
+  @Override
+  public String deletePost(Long postId, User user) {
+<span class="nc" id="L87">    Post post = _findPost(postId);</span>
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">    if (user.getUserRole() != UserRoleEnum.ADMIN) {</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">      if (!post.getUser().getId().equals(user.getId())) {</span>
+<span class="nc" id="L91">        throw new IllegalArgumentException(&quot;글 작성자만 삭제 가능합니다.&quot;);</span>
+      }
+    }
+
+<span class="nc" id="L95">    postRepository.deleteById(postId);</span>
+<span class="nc" id="L96">    return &quot;게시글이 삭제되었습니다.&quot;;</span>
+  }
+
+  // 중복 코드
+  private Post _findPost(Long postId) {
+<span class="nc" id="L101">    Post post = postRepository.findById(postId).orElseThrow(</span>
+<span class="nc" id="L102">        () -&gt; new IllegalArgumentException(&quot;게시글이 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L104">    return post;</span>
+  }
+
+  // 조회수 증가
+  @Transactional
+  @Override
+  public int updateView(Long id, HttpServletRequest request, HttpServletResponse response) {
+<span class="nc" id="L111">    Cookie[] cookies = request.getCookies();  // 클라이언트가 보낸 데이터에서 쿠키 찾기</span>
+<span class="nc" id="L112">    boolean checkCookie = false; // 쿠키값 정의</span>
+<span class="nc" id="L113">    int result = 0; // 조회수 0</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">    if (cookies != null) { // 쿠키가 있을 경우</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">      for (Cookie cookie : cookies) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (cookie.getName().equals(VIEWCOOKIE + id)) { // 게시글의 쿠키인지 확인</span>
+<span class="nc" id="L117">          checkCookie = true;</span>
+        }
+      }
+    } else { // 쿠키가 없을 경우
+<span class="nc" id="L121">      Cookie newCookie = _createCookieForNewView(id); // 새 쿠키 발급</span>
+<span class="nc" id="L122">      response.addCookie(newCookie);</span>
+<span class="nc" id="L123">      result = postRepository.updateView(id);</span>
+    }
+<span class="nc" id="L125">    return result;</span>
+  }
+
+  /**
+   * 조회수 중복 방지를 위한 쿠키 생성 메소드
+   */
+  private Cookie _createCookieForNewView(Long postId) {
+<span class="nc" id="L132">    Cookie cookie = new Cookie(VIEWCOOKIE + postId, String.valueOf(postId));</span>
+<span class="nc" id="L133">    cookie.setMaxAge(_getRemainTimeForTomorrow());</span>
+<span class="nc" id="L134">    cookie.setHttpOnly(true); // 서버에서만 조작 가능</span>
+<span class="nc" id="L135">    return cookie;</span>
+  }
+
+  private int _getRemainTimeForTomorrow() {
+<span class="nc" id="L139">    LocalDateTime now = LocalDateTime.now(ZoneId.of(&quot;Asia/Seoul&quot;));</span>
+<span class="nc" id="L140">    LocalDateTime tomorrow = LocalDateTime.now().plusDays(1L).truncatedTo(ChronoUnit.DAYS);</span>
+<span class="nc" id="L141">    return (int) now.until(tomorrow, ChronoUnit.SECONDS);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

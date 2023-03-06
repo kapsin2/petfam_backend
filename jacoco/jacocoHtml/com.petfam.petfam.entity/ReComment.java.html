@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReComment.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.entity</a> &gt; <span class="el_source">ReComment.java</span></div><h1>ReComment.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.entity;
+
+
+import com.petfam.petfam.dto.recomment.ReCommentRequestDto;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Getter
+<span class="nc" id="L18">@NoArgsConstructor</span>
+public class ReComment extends TimeStamped {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+<span class="nc" id="L23">  private Long id;</span>
+
+  @Column
+<span class="nc" id="L26">  private String content;</span>
+
+  @Column
+<span class="nc" id="L29">  private Integer likes;</span>
+
+
+  @JoinColumn
+  @ManyToOne
+<span class="nc" id="L34">  private User user;</span>
+
+  @JoinColumn
+  @ManyToOne
+<span class="nc" id="L38">  private Comment comment;</span>
+
+
+  public void updateLike(boolean islike) {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">    likes += islike ? 1 : -1;</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">    if (likes &lt; 0) {</span>
+<span class="nc" id="L44">      likes = 0;</span>
+    }
+<span class="nc" id="L46">  }</span>
+
+<span class="nc" id="L48">  @Builder</span>
+<span class="nc" id="L49">  public ReComment(Comment comment, User user, ReCommentRequestDto reCommentRequestDto) {</span>
+<span class="nc" id="L50">    this.comment = comment;</span>
+<span class="nc" id="L51">    this.user = user;</span>
+<span class="nc" id="L52">    this.content = reCommentRequestDto.getContent();</span>
+<span class="nc" id="L53">    this.likes = 0;</span>
+<span class="nc" id="L54">  }</span>
+
+  public void updateReComment(String content) {
+<span class="nc" id="L57">    this.content = content;</span>
+<span class="nc" id="L58">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

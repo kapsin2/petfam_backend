@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReCommentServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">petfam</a> &gt; <a href="index.source.html" class="el_package">com.petfam.petfam.service.recomment</a> &gt; <span class="el_source">ReCommentServiceImpl.java</span></div><h1>ReCommentServiceImpl.java</h1><pre class="source lang-java linenums">package com.petfam.petfam.service.recomment;
+
+import com.petfam.petfam.dto.recomment.ReCommentRequestDto;
+import com.petfam.petfam.entity.Comment;
+import com.petfam.petfam.entity.ReComment;
+import com.petfam.petfam.entity.User;
+import com.petfam.petfam.repository.CommentRepository;
+import com.petfam.petfam.repository.ReCommentRepository;
+import com.petfam.petfam.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+<span class="nc" id="L15">@RequiredArgsConstructor</span>
+public class ReCommentServiceImpl implements ReCommentService {
+
+  private final UserRepository userRepository;
+
+  private final CommentRepository commentRepository;
+
+  private final ReCommentRepository reCommentRepository;
+
+  // 대댓글 생성
+  @Transactional
+  public String reComment(Long commentId, User user,
+      ReCommentRequestDto reCommentRequestDto) {
+<span class="nc" id="L28">    user = _getUser(user.getUsername());</span>
+<span class="nc" id="L29">    Comment comment = _getComment(commentId);</span>
+<span class="nc" id="L30">    ReComment reComment = new ReComment(comment, user, reCommentRequestDto);</span>
+<span class="nc" id="L31">    reCommentRepository.save(reComment);</span>
+<span class="nc" id="L32">    return &quot;댓글 생성이 완료되었습니다.&quot;;</span>
+  }
+
+  // 대댓글 수정
+  @Transactional
+  public String updateReComment(Long reCommentId, User user,
+      ReCommentRequestDto reCommentRequestDto) {
+<span class="nc" id="L39">    ReComment reComment = _getReComment(reCommentId);</span>
+<span class="nc" id="L40">    user = _getUser(user.getUsername());</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">      if (!user.isAdmin()) {</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">          if (reComment.getUser().getUsername().equals(user.getUsername())) {</span>
+<span class="nc" id="L43">              reComment.updateReComment(reCommentRequestDto.getContent());</span>
+<span class="nc" id="L44">              reCommentRepository.save(reComment);</span>
+          } else {
+<span class="nc" id="L46">              throw new IllegalArgumentException(&quot;자신이 작성한 댓글만 수정이 가능합니다.&quot;);</span>
+          }
+      } else {
+<span class="nc" id="L49">          reComment.updateReComment(reCommentRequestDto.getContent());</span>
+      }
+<span class="nc" id="L51">    return &quot;댓글 수정이 완료되었습니다.&quot;;</span>
+  }
+
+  // 대댓글 삭제
+  @Transactional
+  public String deleteReComment(Long reCommentId, User user) {
+<span class="nc" id="L57">    ReComment reComment = _getReComment(reCommentId);</span>
+<span class="nc" id="L58">    user = _getUser(user.getUsername());</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">      if (!user.isAdmin()) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">          if (reComment.getUser().getUsername().equals(user.getUsername())) {</span>
+<span class="nc" id="L61">              reCommentRepository.deleteById(reCommentId);</span>
+          } else {
+<span class="nc" id="L63">              throw new IllegalArgumentException(&quot;자신이 작성한 댓글만 삭제가 가능합니다.&quot;);</span>
+          }
+      } else {
+<span class="nc" id="L66">          reCommentRepository.deleteById(reCommentId);</span>
+      }
+<span class="nc" id="L68">    return &quot;댓글 삭제가 완료되었습니다.&quot;;</span>
+  }
+
+
+  private User _getUser(String username) {
+<span class="nc" id="L73">    User user = userRepository.findByUsername(username).orElseThrow(</span>
+<span class="nc" id="L74">        () -&gt; new IllegalArgumentException(&quot;해당 유저가 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L76">    return user;</span>
+  }
+
+  private Comment _getComment(Long commentId) {
+<span class="nc" id="L80">    Comment comment = commentRepository.findById(commentId).orElseThrow(</span>
+<span class="nc" id="L81">        () -&gt; new IllegalArgumentException(&quot;해당 댓글이 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L83">    return comment;</span>
+  }
+
+  private ReComment _getReComment(Long reCommentId) {
+<span class="nc" id="L87">    ReComment reComment = reCommentRepository.findById(reCommentId).orElseThrow(</span>
+<span class="nc" id="L88">        () -&gt; new IllegalArgumentException(&quot;해당 댓글이 존재하지 않습니다.&quot;)</span>
+    );
+<span class="nc" id="L90">    return reComment;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
